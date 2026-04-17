@@ -30,25 +30,11 @@ on:
     - cron: '0 2 * * *'
 
 jobs:
-  run-tests:
+  run-tests-dev:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        targetEnv: ${{ fromJson(
-          github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'both'
-            ? '["dev","int"]'
-            : github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'int'
-              ? '["int"]'
-              : github.event_name == 'workflow_dispatch'
-                ? '["dev"]'
-                : github.event_name == 'schedule'
-                  ? '["int"]'
-                  : github.event_name == 'push'
-                    ? '["int"]'
-                    : github.event_name == 'pull_request'
-                      ? '["dev"]'
-                      : '["dev"]'
-        ) }}
+    if: |
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'dev' || github.event.inputs.environment == 'both')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -68,12 +54,47 @@ jobs:
 
       - name: Run Cypress tests
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             SCOPE=smoke
-          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            SCOPE=${{ github.event.inputs.testScope }}
+          else
+            SCOPE=smoke
+          fi
+          echo "Running $SCOPE tests against DEV"
+          npm run test:dev:$SCOPE
+
+  run-tests-int:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.environment == 'int' || github.event.inputs.environment == 'both')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start static app server
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000
+
+      - name: Run Cypress tests
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            SCOPE=smoke
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             SCOPE=${{ github.event.inputs.testScope }}
           else
             SCOPE=regression
           fi
-          echo "Running $SCOPE tests against ${{ matrix.targetEnv }}"
-          npm run test:${{ matrix.targetEnv }}:$SCOPE
+          echo "Running $SCOPE tests against INT"
+          npm run test:int:$SCOPE
