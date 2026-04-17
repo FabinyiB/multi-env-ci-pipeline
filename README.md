@@ -1,33 +1,108 @@
-# Multi-environment CI Pipeline
+# Multi-Environment CI Pipeline with Cypress & GitHub Actions
 
-A sample project demonstrating a multi-environment Cypress pipeline with GitHub Actions.
+This repository demonstrates a multi-environment Continuous Integration (CI) pipeline using Cypress and GitHub Actions.
 
-## Features
+The workflow simulates a realistic QA automation setup where smoke tests validate pull requests quickly, while regression tests run automatically against a separate integration environment on a schedule.
 
-- DEV / INT environment selection
-- Manual and scheduled GitHub Actions triggers
-- PR smoke tests and main regression tests
-- Regression filtering by `@regression` tag
-- Simple Hello World app with background color toggle
+---
 
-## Run locally
+## Project Goal
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+The purpose of this project is to showcase how automated tests can be executed across multiple environments with different scopes depending on the trigger type:
 
-2. Start the app:
-   ```bash
-   npm start
-   ```
+* Pull requests → fast smoke validation (DEV environment)
+* Push to main → regression validation (INT environment)
+* Nightly scheduled execution → regression validation (INT environment)
+* Manual workflow execution → selectable environment and scope
 
-3. Run DEV smoke tests:
-   ```bash
-   npm run test:dev:smoke
-   ```
 
-4. Run INT regression tests:
-   ```bash
-   npm run test:int:regression
-   ```
+---
+
+## Pipeline Overview
+
+The GitHub Actions workflow supports four execution modes:
+
+| Trigger          | Environment      | Test Scope                |
+| ---------------- | ---------------- | ------------------------- |
+| Pull Request     | DEV              | Smoke                     |
+| Push to main     | INT              | Regression                |
+| Nightly schedule | INT              | Regression                |
+| Manual run       | DEV / INT / BOTH | Smoke / Regression / BOTH |
+
+
+---
+
+## Multi-Environment Configuration
+
+Environment-specific Cypress configurations are stored here:
+
+```
+cypress/configs/dev.config.ts
+cypress/configs/int.config.ts
+```
+
+These configuration files allow the same test suite to run against different environments without modifying test code.
+
+Example usage:
+
+```
+npm run test:dev:smoke
+npm run test:int:regression
+```
+
+---
+
+## Manual Workflow Execution
+
+The pipeline can also be triggered manually from GitHub Actions:
+
+```
+Run workflow → Select environment → Select test scope
+```
+
+Supported environment options:
+
+* dev
+* int
+* both
+
+Supported scope options:
+
+* smoke
+* regression
+* both
+
+This enables flexible test execution depending on validation needs.
+
+---
+
+## Scheduled Regression Testing
+
+A nightly workflow executes regression tests automatically against the INT environment:
+
+```
+02:00 UTC every day
+```
+
+This simulates a production-style regression validation pipeline commonly used in enterprise environments.
+
+---
+
+## Tech Stack
+
+* Cypress
+* GitHub Actions
+* Node.js
+* JavaScript
+
+---
+
+## Related Project
+
+This repository focuses on CI validation strategy only.
+
+A companion project demonstrating Docker image publishing and automated cloud deployment is available here:
+
+https://github.com/FabinyiB/cypress-ci-cd-docker-render-demo
+
+Together these repositories demonstrate both validation (CI) and deployment (CD) pipeline design.
