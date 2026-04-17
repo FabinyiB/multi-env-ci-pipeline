@@ -1,0 +1,79 @@
+name: Multi-Environment CI Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Choose the target environment.'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - int
+          - both
+      testScope:
+        description: 'Choose the test scope to run.'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - regression
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        targetEnv: ${{ fromJson(
+          github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'both'
+            ? '["dev","int"]'
+            : github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'int'
+              ? '["int"]'
+              : github.event_name == 'workflow_dispatch'
+                ? '["dev"]'
+                : github.event_name == 'schedule'
+                  ? '["int"]'
+                  : github.event_name == 'push'
+                    ? '["int"]'
+                    : github.event_name == 'pull_request'
+                      ? '["dev"]'
+                      : '["dev"]'
+        ) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start static app server
+        run: |
+          npm run start &
+          npx wait-on http://localhost:3000
+
+      - name: Run Cypress tests
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            SCOPE=smoke
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            SCOPE=${{ github.event.inputs.testScope }}
+          else
+            SCOPE=regression
+          fi
+          echo "Running $SCOPE tests against ${{ matrix.targetEnv }}"
+          npm run test:${{ matrix.targetEnv }}:$SCOPE

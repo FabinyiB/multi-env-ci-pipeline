@@ -1,0 +1,23 @@
+{
+  "name": "multi-env-ci-pipeline",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx http-server ./app -p 3000 --silent",
+    "test:dev:smoke": "cross-env TARGET_ENV=dev npx cypress run --env grepTags=@smoke",
+    "test:dev:regression": "cross-env TARGET_ENV=dev npx cypress run --env grepTags=@regression",
+    "test:int:smoke": "cross-env TARGET_ENV=int npx cypress run --env grepTags=@smoke",
+    "test:int:regression": "cross-env TARGET_ENV=int npx cypress run --env grepTags=@regression",
+    "test:dev": "npm run test:dev:smoke",
+    "test:int": "npm run test:int:smoke",
+    "test:both": "npm run test:dev && npm run test:int"
+  },
+  "devDependencies": {
+    "@cypress/grep": "^4.0.0",
+    "cross-env": "^7.0.3",
+    "cypress": "^12.17.0",
+    "http-server": "^14.1.1",
+    "wait-on": "^7.0.3"
+  }
+}
