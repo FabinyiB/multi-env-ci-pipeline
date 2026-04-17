@@ -7,8 +7,10 @@
     "start": "npx http-server ./app -p 3000 --silent",
     "test:dev:smoke": "cross-env TARGET_ENV=dev npx cypress run --env grepTags=@smoke",
     "test:dev:regression": "cross-env TARGET_ENV=dev npx cypress run --env grepTags=@regression",
+    "test:dev:both": "npm run test:dev:smoke && npm run test:dev:regression",
     "test:int:smoke": "cross-env TARGET_ENV=int npx cypress run --env grepTags=@smoke",
     "test:int:regression": "cross-env TARGET_ENV=int npx cypress run --env grepTags=@regression",
+    "test:int:both": "npm run test:int:smoke && npm run test:int:regression",
     "test:dev": "npm run test:dev:smoke",
     "test:int": "npm run test:int:smoke",
     "test:both": "npm run test:dev && npm run test:int"

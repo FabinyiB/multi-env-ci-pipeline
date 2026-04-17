@@ -20,6 +20,7 @@ on:
         options:
           - smoke
           - regression
+          - both
   pull_request:
     branches:
       - main
